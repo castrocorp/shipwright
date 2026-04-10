@@ -5,8 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENGINE_DIR="$SCRIPT_DIR/engine"
 CLAUDE_DIR="$HOME/.claude"
 
-echo "Claude Workflow Engine — Installer (Mac/Linux)"
-echo "================================================"
+echo "Shipwright — Installer (Mac/Linux)"
+echo "===================================="
 echo ""
 echo "Source:  $ENGINE_DIR"
 echo "Target:  $CLAUDE_DIR"
@@ -25,7 +25,7 @@ backup_if_exists() {
     fi
 }
 
-items=("CLAUDE.md" "commands" "skills" "stacks")
+items=("CLAUDE.md" "agents" "commands" "prompts" "skills" "stacks")
 
 for item in "${items[@]}"; do
     src="$ENGINE_DIR/$item"
@@ -41,6 +41,21 @@ for item in "${items[@]}"; do
     echo "  Linked: $item → $src"
 done
 
+# Verify critical symlinks
+echo ""
+echo "Verifying symlinks..."
+fail=0
+for item in "${items[@]}"; do
+    dest="$CLAUDE_DIR/$item"
+    if [ ! -e "$dest" ]; then
+        echo "  FAIL: $dest does not exist"
+        fail=1
+    fi
+done
+if [ $fail -eq 0 ]; then
+    echo "  All symlinks verified."
+fi
+
 echo ""
 echo "Done. The following were NOT touched:"
 echo "  - $CLAUDE_DIR/settings.json"
@@ -49,6 +64,6 @@ echo "  - $CLAUDE_DIR/plugins/"
 echo "  - $CLAUDE_DIR/projects/"
 echo ""
 echo "Next steps:"
-echo "  1. Copy template/project.md to your project's .claude/project.md"
-echo "  2. Fill in the project-specific values"
-echo "  3. Configure MCP servers (Slack, JIRA) in settings.json"
+echo "  1. cd /path/to/your/project && /init-project (or copy template/project.md to .claude/project.md)"
+echo "  2. Fill in any {PLACEHOLDER} values in .claude/project.md"
+echo "  3. Connect MCP integrations: copy template/mcp.json to your project, or use /mcp in Claude Code"

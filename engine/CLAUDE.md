@@ -1,4 +1,4 @@
-# Claude Workflow Engine
+# Shipwright
 
 ## Project Config
 
@@ -43,6 +43,21 @@ After the loop exits, continue to `/code-review`.
 2. Did any setup tool/plugin fail? → Surface error to user, STOP, ask how to proceed
 3. Are there extra instructions in the request? → Understand them before acting
 4. Is there a stale branch or worktree from a previous attempt? → Clean it up first
+
+### Graceful Degradation
+
+External integrations (Slack, Atlassian, `gh` CLI, ralph-loop) are **enhancements, not requirements**. The core pipeline (branch → code → test → commit → PR) must work with zero MCP servers.
+
+**Detection**: At the start of each command, probe for the integration. If unavailable, log a warning and use the fallback path — never stop the pipeline for a non-essential dependency.
+
+| Integration | When unavailable |
+|-------------|-----------------|
+| **Slack MCP** | Skip thread creation and all Slack updates. Don't create `.slack-thread`. All commands check for `.slack-thread` before posting — if absent, skip silently. |
+| **Atlassian MCP** | Skip JIRA analysis, transitions, and ticket type lookups. Use context from user's request for AC. Default to `feat/` branch prefix unless user specifies a bug. |
+| **`gh` CLI** | Push branch via `git push`. Output the PR creation URL for the user to open manually. Skip PR status checks in cleanup. |
+| **ralph-loop plugin** | `/tdd-ralph` falls back to manual TDD implementation (Red-Green-Refactor without iterative loop). Log warning. |
+
+**Principle**: A command should do everything it CAN do, skip what it CAN'T, and report what was skipped — never block the user's work because an optional integration is down.
 
 ### Error Recovery
 - **Tool/plugin setup failure**: STOP immediately, report error to user, do NOT substitute a different approach silently

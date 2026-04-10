@@ -131,11 +131,11 @@ Create Jira ticket
     ↓
 /analyze-jira (analyze the ticket just created)
     ↓
+/bug-analyze (bug tickets only)
+    ↓
 /create-branch (using ticket ID)
     ↓
 /check-lessons
-    ↓
-/bug-analyze (bug tickets only)
     ↓
 /tdd-ralph (TDD implementation via ralph-loop)
     ↓

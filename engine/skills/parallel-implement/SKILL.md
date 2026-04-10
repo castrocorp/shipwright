@@ -5,7 +5,9 @@ description: Implement multiple JIRA tickets in parallel using isolated git work
 
 # Parallel Multi-Ticket Implementation
 
-Orchestrate parallel implementation of multiple JIRA tickets using git worktrees for isolation. Each ticket gets its own worktree and Slack thread. Agents do **file edits only** — the orchestrator handles all git, build, and gh operations.
+Orchestrate parallel implementation of multiple tickets using git worktrees for isolation. Each ticket gets its own worktree. Agents do **file edits only** — the orchestrator handles all git, build, and gh operations.
+
+Integrations (Slack, Atlassian, `gh`) are optional — the orchestrator probes each and adapts.
 
 ## Usage
 
@@ -28,6 +30,24 @@ Read `.claude/project.md` for:
 - Repo mapping (ticket prefix → repo path)
 - Build/test/lint commands
 - Stack name (for code quality rules)
+
+## Step 0: Probe Integrations
+
+Before starting, check what's available:
+
+1. **Slack MCP**: Attempt a lightweight call.
+   - Available → create threads for tracking
+   - Unavailable → set `SLACK_AVAILABLE = false`, skip all Slack steps
+
+2. **Atlassian MCP**: Attempt `getAccessibleAtlassianResources()`.
+   - Available → fetch ticket types for branch prefix
+   - Unavailable → set `JIRA_AVAILABLE = false`, default all branches to `feat/`
+
+3. **`gh` CLI**: Run `gh auth status`.
+   - Available → create PRs automatically
+   - Unavailable → set `GH_AVAILABLE = false`, push branches and output manual PR URLs
+
+Log a summary of integration status before proceeding.
 
 ## Responsibility Split
 
@@ -83,11 +103,15 @@ git -C <REPO_PATH> worktree list | grep "{TICKET_ID}"
 ```
 If NOT found → **STOP immediately** with error.
 
-### Step 5: Fetch JIRA Ticket Types
+### Step 5: Determine Branch Prefix
 
+**If `JIRA_AVAILABLE`:**
 For each ticket, fetch issue type from JIRA to determine branch prefix:
 - `"Bug"` → `fix/`
 - Anything else → `feat/`
+
+**If `NOT JIRA_AVAILABLE`:**
+Default all branches to `feat/`. Log: `WARN: Atlassian unavailable — using feat/ prefix for all tickets.`
 
 ### Step 6: Create Branches
 
@@ -97,7 +121,9 @@ git -C "$ORCH_DIR/{TICKET_ID}" checkout -b {prefix}/{TICKET_ID}
 git -C "$ORCH_DIR/{TICKET_ID}" push -u origin {prefix}/{TICKET_ID}
 ```
 
-### Step 7: Create Orchestration Slack Thread
+### Step 7: Create Orchestration Slack Thread (if Slack available)
+
+**If `SLACK_AVAILABLE`:**
 
 Post ONE master thread to track overall progress:
 ```
@@ -107,7 +133,11 @@ Post ONE master thread to track overall progress:
 )
 ```
 
-### Step 8: Create Individual Slack Threads
+**If `NOT SLACK_AVAILABLE`:** Skip. Print orchestration summary to terminal only.
+
+### Step 8: Create Individual Slack Threads (if Slack available)
+
+**If `SLACK_AVAILABLE`:**
 
 For EACH ticket, create a dedicated Slack thread and save it to `.slack-thread` inside the worktree:
 
@@ -120,69 +150,20 @@ For EACH ticket, create a dedicated Slack thread and save it to `.slack-thread` 
 }
 ```
 
+**If `NOT SLACK_AVAILABLE`:** Skip. Do not create `.slack-thread` files. Worker agents will detect the missing file and skip Slack posts.
+
 ### Step 9: Launch Agents in Parallel
 
 Launch ALL agents in a **SINGLE message** (multiple Agent tool calls) for true parallelism. If 4+ tickets, stagger with 2-second delay.
 
-Each agent gets `subagent_type: "general-purpose"` with this prompt template (fill ALL placeholders):
+Each agent gets `subagent_type: "general-purpose"` with the prompt template from `~/.claude/prompts/worker-agent.md`.
 
-```
-You are implementing JIRA ticket {TICKET_ID} as part of a parallel orchestration.
+**Before launching agents:**
+1. Read `~/.claude/prompts/worker-agent.md`
+2. Fill ALL `{PLACEHOLDERS}` with values from Steps 1–8
+3. Use the filled prompt for each agent
 
-WORKING DIRECTORY: {ORCH_DIR}/{TICKET_ID}
-
-BRANCH: {prefix}/{TICKET_ID} (already created — do NOT run any git commands)
-
-YOUR ROLE: File edits only. You MUST NOT run any shell commands (no git, no build tools, no gh).
-The orchestrator handles all git, test, commit, and PR operations after you return.
-
-WORKFLOW — Execute without stopping:
-
-1. CHECK LESSONS LEARNED
-   - Read: ~/.claude/projects/*/memory/lessons-learned.md
-   - Post relevant findings to Slack thread
-
-2. ANALYZE JIRA TICKET
-   - Use Atlassian MCP to fetch ticket details
-   - Extract: summary, description, type, acceptance criteria
-   - Post analysis to Slack thread
-
-3. BUG ANALYSIS (only if ticket type is Bug)
-   - Investigate codebase for root cause using Read and Grep only
-   - Document findings in Slack thread
-
-4. TDD IMPLEMENTATION
-   - Write unit tests FIRST (never integration for TDD)
-   - Implement code to pass tests
-   - Refactor
-   - Post progress to Slack thread
-
-5. SELF-REVIEW
-   - Re-read every file you modified
-   - Check for: security issues, missing edge cases, code style
-   - Fix issues found
-   - Only output <promise>DONE</promise> when satisfied
-
-STACK RULES:
-Read ~/.claude/stacks/{STACK}.md for language-specific code quality rules.
-
-SLACK THREAD:
-- Read timestamp from .slack-thread file in your working directory
-- Tool: {SLACK_TOOL}
-- Method: slack_reply_to_thread
-- Channel: {SLACK_CHANNEL}
-- NEVER create a new thread
-
-NO AI REFERENCES in code or comments.
-
-WHEN DONE, return a JSON manifest:
-{
-  "ticket_id": "{TICKET_ID}",
-  "status": "success|failure",
-  "files_modified": ["path/to/file1", "path/to/file2"],
-  "error": null
-}
-```
+This keeps the agent prompt in a single source of truth. If the worker workflow changes, update `prompts/worker-agent.md` — all orchestrations pick it up automatically.
 
 ### Step 10: Post-Agent Operations
 
@@ -209,6 +190,8 @@ git -C "$ORCH_DIR/{TICKET_ID}" push
 ```
 
 #### 10e. Create PR
+
+**If `GH_AVAILABLE`:**
 ```bash
 cat <REPO_PATH>/.github/pull_request_template.md
 
@@ -219,10 +202,18 @@ gh pr create \
   --head {prefix}/{TICKET_ID}
 ```
 
-Post PR URL to the ticket's Slack thread.
+If `.slack-thread` exists in the worktree, post PR URL to the ticket's Slack thread.
+
+**If `NOT GH_AVAILABLE`:**
+Branch is already pushed (from Step 10d). Construct manual PR URL:
+```bash
+REMOTE_URL=$(git -C "$ORCH_DIR/{TICKET_ID}" remote get-url origin | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
+echo "${REMOTE_URL}/compare/${BASE_BRANCH}...{prefix}/{TICKET_ID}?expand=1"
+```
 
 ### Step 11: Summary
 
+**If `SLACK_AVAILABLE`:**
 Post to the **orchestration** Slack thread:
 ```
 *Parallel Implementation Complete* — {success_count}/{total} succeeded
@@ -231,9 +222,11 @@ Post to the **orchestration** Slack thread:
 ❌ *{TICKET_2}* `{branch_2}` — failed: {error_summary}
 ```
 
+**Always** (regardless of Slack):
+
 ### Step 12: Present to User
 
-Display a summary table in the terminal with ticket, status, branch, and PR URL.
+Display a summary table in the terminal with ticket, status, branch, and PR URL (or manual PR URL).
 
 ---
 
@@ -246,9 +239,11 @@ Display a summary table in the terminal with ticket, status, branch, and PR URL.
 | Agent returns failure | Skip post-agent steps, mark FAILED, continue others |
 | Tests fail after 2 retries | Mark FAILED, post to Slack, continue others |
 | Lint violations | Fix manually, re-run |
-| Slack MCP failure | Retry once, continue if still failing |
+| Slack MCP unavailable | Skip all Slack steps, report to terminal only |
+| Atlassian MCP unavailable | Default to `feat/` prefix, skip JIRA analysis in agents |
+| `gh` CLI unavailable | Push branches, output manual PR URLs |
 | Branch already exists | Delete and recreate from origin/{BASE_BRANCH} |
-| PR creation fails | Retry once; if still failing, post branch name to Slack |
+| PR creation fails | Retry once; if still failing, output manual PR URL |
 
 ---
 

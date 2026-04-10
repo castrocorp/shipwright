@@ -40,7 +40,7 @@ SLACK THREAD MANAGEMENT:
    - DO NOT create new thread under ANY circumstances
    - DO NOT use slack_post_message (only slack_reply_to_thread)
    - DO NOT guess or generate timestamps
-   - If .slack-thread missing, FAIL with clear error
+   - If .slack-thread missing, skip all Slack posts silently — do NOT fail
 
 4. Message formatting:
    - Use *bold* for emphasis, `code` for inline code

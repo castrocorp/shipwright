@@ -6,7 +6,7 @@ description: Create git commit with proper message format and Slack notification
 
 ## Step 0: Load Config
 Read `.claude/project.md` for: `SLACK_CHANNEL`, `SLACK_TOOL`.
-Read `.slack-thread` for: thread timestamp.
+Read `.slack-thread` for: thread timestamp (if file exists).
 
 ## NO ROLLBACK POLICY
 
@@ -65,7 +65,7 @@ If hook fails → fix issues, create NEW commit. NEVER amend.
 git log -1 --stat
 git status
 ```
-Post commit details to Slack thread.
+If `.slack-thread` exists, post commit details to Slack thread. Otherwise, skip.
 
 ## Rules
 - Review changes before committing

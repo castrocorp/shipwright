@@ -10,7 +10,21 @@ Combine strict TDD methodology with ralph-loop iterative execution. Automaticall
 ## Step 0: Load Config
 Read `.claude/project.md` for: build/test/lint commands, stack name, `SLACK_CHANNEL`, `SLACK_TOOL`.
 Read `~/.claude/stacks/{STACK}.md` for: language-specific code quality rules.
-Read `.slack-thread` for: thread timestamp.
+Read `.slack-thread` for: thread timestamp (if file exists).
+
+## Step 0.5: Probe Dependencies
+
+1. **ralph-loop plugin**: Attempt to resolve the `ralph-loop:ralph-loop` skill.
+   - Available → use ralph-loop for iterative TDD (Step 3)
+   - Unavailable → log warning and fall back to manual TDD (Step 3b):
+     ```
+     WARNING: ralph-loop plugin is not installed. Falling back to manual TDD implementation.
+     For iterative TDD with automatic retries, install from: https://github.com/anthropics/claude-code-plugins
+     ```
+
+2. **Slack MCP**: Check if `.slack-thread` exists.
+   - Present → post phase updates to Slack thread
+   - Absent → skip Slack, continue silently
 
 ## Step 1: Gather Context
 
@@ -32,10 +46,10 @@ From the current conversation, extract:
 
 If a value is ambiguous, infer from the codebase — do NOT stop to ask.
 
-## Step 2: Post Slack Update
-Notify the existing thread that the TDD loop is starting.
+## Step 2: Post Slack Update (if available)
+If `.slack-thread` exists, notify the existing thread that TDD is starting. Otherwise, skip.
 
-## Step 3: Compose Prompt and Invoke Ralph Loop
+## Step 3: Invoke Ralph Loop (if available)
 
 Use the Skill tool to invoke `ralph-loop:ralph-loop`. Fill ALL placeholders from Step 1.
 
@@ -45,7 +59,18 @@ skill: "ralph-loop:ralph-loop"
 args: "<COMPOSED_PROMPT> --completion-promise DONE --max-iterations 30"
 ```
 
-**PROMPT TEMPLATE:**
+## Step 3b: Manual TDD (fallback when ralph-loop unavailable)
+
+If ralph-loop is not installed, execute the TDD cycle manually using the same prompt template from Step 3:
+
+1. **RED** — Write failing unit tests based on acceptance criteria
+2. **GREEN** — Implement minimum code to pass all tests
+3. **REFACTOR** — Clean up while keeping tests green
+4. **VERIFY** — Run compile gate and lint check
+
+Run build/test/lint commands from `project.md` after each phase. Repeat until all acceptance criteria are met and the completeness checklist passes.
+
+## Prompt Template
 
 ```
 Implement {TICKET_ID}: {SUMMARY}
@@ -93,7 +118,7 @@ VERIFY (compilation + lint):
 
 --- SLACK UPDATES ---
 Post phase transitions to existing Slack thread:
-- Read thread info from .slack-thread or .slack-thread-* file
+- Read thread info from .slack-thread file
 - If missing, continue without Slack
 
 --- COMPLETION ---
@@ -102,10 +127,11 @@ Output <promise>DONE</promise> ONLY when ALL checkboxes are true.
 
 ## Step 4: After Ralph Loop Exits
 
-Post result to Slack thread (success or max-iterations reached).
+Post result to Slack thread (if available): success or max-iterations reached.
 If max iterations reached without completion, STOP and report to user.
 
 ## Rules
+- ralph-loop is preferred but not required — fall back to manual TDD if unavailable
 - Fill ALL placeholders before invoking ralph-loop
 - Include lessons learned in the prompt
 - Use build commands from `project.md` (never hardcode)

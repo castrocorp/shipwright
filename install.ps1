@@ -4,8 +4,8 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $EngineDir = Join-Path $ScriptDir "engine"
 $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
 
-Write-Host "Claude Workflow Engine - Installer (Windows)"
-Write-Host "=============================================="
+Write-Host "Shipwright - Installer (Windows)"
+Write-Host "=================================="
 Write-Host ""
 Write-Host "Source:  $EngineDir"
 Write-Host "Target:  $ClaudeDir"
@@ -36,7 +36,7 @@ function Backup-IfExists($path) {
     }
 }
 
-$items = @("CLAUDE.md", "commands", "skills", "stacks")
+$items = @("CLAUDE.md", "agents", "commands", "prompts", "skills", "stacks")
 
 foreach ($item in $items) {
     $src = Join-Path $EngineDir $item
@@ -52,6 +52,21 @@ foreach ($item in $items) {
     Write-Host "  Linked: $item -> $src"
 }
 
+# Verify critical symlinks
+Write-Host ""
+Write-Host "Verifying symlinks..."
+$fail = $false
+foreach ($item in $items) {
+    $dest = Join-Path $ClaudeDir $item
+    if (-not (Test-Path $dest)) {
+        Write-Host "  FAIL: $dest does not exist"
+        $fail = $true
+    }
+}
+if (-not $fail) {
+    Write-Host "  All symlinks verified."
+}
+
 Write-Host ""
 Write-Host "Done. The following were NOT touched:"
 Write-Host "  - $ClaudeDir\settings.json"
@@ -60,6 +75,6 @@ Write-Host "  - $ClaudeDir\plugins\"
 Write-Host "  - $ClaudeDir\projects\"
 Write-Host ""
 Write-Host "Next steps:"
-Write-Host "  1. Copy template\project.md to your project's .claude\project.md"
-Write-Host "  2. Fill in the project-specific values"
-Write-Host "  3. Configure MCP servers (Slack, JIRA) in settings.json"
+Write-Host "  1. cd \path\to\your\project; then run /init-project (or copy template\project.md to .claude\project.md)"
+Write-Host "  2. Fill in any {PLACEHOLDER} values in .claude\project.md"
+Write-Host "  3. Connect MCP integrations: copy template\mcp.json to your project, or use /mcp in Claude Code"

@@ -1,129 +1,105 @@
-# Claude Workflow Engine
+# Shipwright
 
-Reusable AI-powered development workflow for Claude Code. Provides a complete pipeline from JIRA ticket to Pull Request, with TDD, code review, and Slack tracking.
+Ticket in, PR out. Shipwright is a development workflow engine for [Claude Code](https://claude.ai/code) that automates the entire pipeline — from JIRA ticket to Pull Request — with TDD, code review, and Slack tracking built in.
+
+## What it does
+
+Give Claude a ticket ID and Shipwright runs the full pipeline automatically:
+
+```
+/start-task          Slack thread + JIRA → In Progress
+    ↓
+/analyze-jira        Fetch AC, linked tickets, attachments
+    ↓
+/create-branch       fix/ or feat/ based on JIRA type
+    ↓
+/check-lessons       Review past incidents before coding
+    ↓
+/tdd-ralph           Red → Green → Refactor (up to 30 iterations)
+    ↓
+/code-review         Independent 6-dimension review
+    ↓
+/create-pr           Push, PR, JIRA → Code Review
+```
+
+Multiple tickets? They run in parallel with isolated git worktrees:
+
+```
+/parallel-implement XPTO-101 XPTO-102 XPTO-103
+```
 
 ## What's included
 
 ```
 engine/
   CLAUDE.md          — Workflow rules and pipeline definition
+  agents/            — Isolated agents (code-reviewer, tech-lead)
   commands/          — Pipeline steps (start-task, tdd-ralph, code-review, etc.)
-  skills/            — Reusable skills (check-lessons, slack-rules)
+  prompts/           — Reusable prompt templates (worker-agent)
+  skills/            — Reusable skills (check-lessons, slack-rules, parallel-implement)
   stacks/            — Language/framework adapters (kotlin-spring, etc.)
 template/
   project.md         — Template for per-project configuration
+  mcp.json           — Pre-configured MCP servers (Slack, Atlassian, Notion)
+  user-claude.md     — Template for personal overrides (~/.claude/CLAUDE.local.md)
 install.sh           — Mac/Linux installer
-install.ps1          — Windows installer (requires Developer Mode)
+install.ps1          — Windows installer
+validate.sh          — Validates engine structure
 ```
 
 ## Quick start
 
 ```bash
-# 1. Clone
-git clone <this-repo> ~/dotfiles/claude-workflow
+# Clone
+git clone <this-repo> ~/dotfiles/shipwright
 
-# 2. Install (creates symlinks into ~/.claude/)
-cd ~/dotfiles/claude-workflow
+# Install (creates symlinks into ~/.claude/)
+cd ~/dotfiles/shipwright
+chmod +x install.sh && ./install.sh    # Mac/Linux
+.\install.ps1                           # Windows (PowerShell)
 
-# Mac/Linux
-chmod +x install.sh && ./install.sh
+# Initialize your project
+cd /path/to/your/project
+/init-project
 
-# Windows (PowerShell as admin or with Developer Mode)
-.\install.ps1
-
-# 3. Configure your project
-cp template/project.md /path/to/your/project/.claude/project.md
-# Edit project.md with your Slack channel, JIRA cloud ID, build commands, etc.
+# Fill in any {PLACEHOLDER} values
+$EDITOR .claude/project.md
 ```
 
-## Pipeline
+## Key features
 
-```
-/start-task → /analyze-jira → /bug-analyze (bugs only)
-  → /create-branch → /check-lessons → /tdd-ralph
-  → /code-review → STOP
-  → [user requests] → /git-commit → /create-pr
-```
+- **Full pipeline automation** — one command triggers the entire flow from ticket to PR
+- **TDD-first** — unit tests before implementation, every time
+- **Independent code review** — isolated agent that never sees implementation decisions
+- **Parallel execution** — 2-5 tickets simultaneously via git worktrees
+- **Slack tracking** — one thread per task, every step posts updates
+- **JIRA transitions** — automatic In Progress / Code Review state changes
+- **Graceful degradation** — every integration (Slack, JIRA, `gh`, ralph-loop) is optional; the core pipeline works with zero MCP servers
+- **Stack adapters** — language-specific rules injected into TDD and review (ships with `kotlin-spring`, extensible)
 
-## Per-project configuration
+## Dependencies
 
-Every command reads `.claude/project.md` in the project root for:
-- Slack channel and tool name
-- JIRA cloud ID and project prefixes
-- Build/test/lint commands
-- Branch naming convention
-- Base branch
-- PR template path and JIRA link format
+All optional. The engine degrades gracefully without any of them.
 
-See `template/project.md` for the full reference.
+| Dependency | What it enables |
+|------------|----------------|
+| **Slack MCP** | Thread tracking, status updates |
+| **Atlassian MCP** | JIRA analysis, transitions, ticket creation |
+| **`gh` CLI** | Automated PR creation |
+| **ralph-loop plugin** | Iterative TDD loop |
 
-## Stack adapters
+## Configuration
 
-Stack adapters live in `engine/stacks/` and provide language-specific code quality rules. Commands reference `stacks/<stack>.md` based on what's declared in `project.md`.
+Three layers, from general to specific:
 
-Available stacks:
-- `kotlin-spring` — Kotlin functional style, SOLID, ktlint, Spring Boot conventions
+| Layer | File | Scope |
+|-------|------|-------|
+| Engine rules | `~/.claude/CLAUDE.md` (symlinked) | All projects |
+| Personal overrides | `~/.claude/CLAUDE.local.md` | All projects |
+| Project config | `.claude/project.md` | One project |
 
-To add a new stack, create `engine/stacks/<your-stack>.md` following the same format.
+Run `/init-project` to auto-detect stack, build tool, base branch, and MCP servers.
 
-## Architecture: commands vs agents vs skills
+## License
 
-Claude Code has three extension types. Each serves a different purpose:
-
-| Type | Runs in | Context | Best for |
-|------|---------|---------|----------|
-| **Command** | Current session | Sees full conversation history | Pipeline steps that build on each other |
-| **Agent** | Fresh session | Isolated — receives context via prompt only | Independent work, fresh perspective, parallelism |
-| **Skill** | Current session | Loaded on demand, not a pipeline step | Reusable snippets, rules, templates |
-
-### Why pipeline steps are commands
-
-The pipeline is sequential and cumulative:
-
-```
-/start-task      → creates Slack thread, saves ticket ID
-/analyze-jira    → reads ticket ID from context, adds AC and findings
-/check-lessons   → reads task description from context, adds precautions
-/tdd-ralph       → reads AC + lessons + bug analysis from context, composes ralph-loop prompt
-/git-commit      → reads what was changed from context
-/create-pr       → reads all commits from context
-```
-
-Each step depends on what the previous steps produced. Commands share the conversation, so this context flows naturally. If these were agents, every step would need the full context serialized into the prompt — redundant and fragile.
-
-### Why code-reviewer is an agent
-
-The reviewer must give an **independent assessment**. If it ran as a command in the same session, it would be biased by the implementation decisions it watched being made. Isolation is the feature — the reviewer only sees the diff and the standards, not the reasoning behind shortcuts.
-
-### Why tech-lead is an agent
-
-Ticket creation is a **separate concern** from the pipeline. The tech-lead refines requirements, creates JIRA tickets, and optionally kicks off the pipeline. It doesn't need implementation context — it needs a clean slate to ask good clarifying questions. It can also run in parallel (create ticket while exploring codebase).
-
-### Why check-lessons and slack-rules are skills
-
-They're **reusable fragments** loaded into commands and agents, not standalone pipeline steps. `slack-rules` is a template injected into agent prompts so they post to the right thread. `check-lessons` is invoked before implementation to scan memory files.
-
-### Decision guide for new extensions
-
-```
-Need prior pipeline context?
-  YES → Command
-  NO  → Does it need a fresh perspective or parallelism?
-          YES → Agent
-          NO  → Is it a reusable snippet/template/rule set?
-                  YES → Skill
-                  NO  → Command (default)
-```
-
-## What stays local (never symlinked)
-
-- `~/.claude/settings.json` — personal permissions
-- `~/.claude/settings.local.json` — local overrides
-- `~/.claude/plugins/` — installed plugins cache
-- `~/.claude/projects/` — per-project memory
-
-## Requirements
-
-- [Claude Code](https://claude.ai/code) CLI installed
-- MCP servers configured for your integrations (Slack, JIRA, etc.)
-- [ralph-loop plugin](https://github.com/anthropics/claude-code-plugins) installed (for `/tdd-ralph`)
+[MIT](LICENSE)

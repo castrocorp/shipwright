@@ -8,7 +8,7 @@ description: Deeply analyze bug through JIRA analysis and codebase investigation
 
 ## Step 0: Load Config
 Read `.claude/project.md` for: `SLACK_CHANNEL`, `SLACK_TOOL`.
-Read `.slack-thread` for: thread timestamp.
+Read `.slack-thread` for: thread timestamp (if file exists).
 
 ## Workflow
 
@@ -37,7 +37,7 @@ Read `.slack-thread` for: thread timestamp.
 
 ## Report Template
 
-Post to Slack thread:
+If `.slack-thread` exists, post to Slack thread. Always output to the conversation.
 1. **Symptom**: What user sees, where, who
 2. **Expected vs Actual**: Key divergence
 3. **Context Analysis**: Present, missing, assumed context
@@ -52,3 +52,4 @@ Post to Slack thread:
 - Question context — never assume it's complete
 - Compare working vs failing flows when possible
 - Honest confidence assessment
+- If `.slack-thread` is absent, skip Slack — do not fail
