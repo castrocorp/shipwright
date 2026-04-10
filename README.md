@@ -66,6 +66,55 @@ Available stacks:
 
 To add a new stack, create `engine/stacks/<your-stack>.md` following the same format.
 
+## Architecture: commands vs agents vs skills
+
+Claude Code has three extension types. Each serves a different purpose:
+
+| Type | Runs in | Context | Best for |
+|------|---------|---------|----------|
+| **Command** | Current session | Sees full conversation history | Pipeline steps that build on each other |
+| **Agent** | Fresh session | Isolated — receives context via prompt only | Independent work, fresh perspective, parallelism |
+| **Skill** | Current session | Loaded on demand, not a pipeline step | Reusable snippets, rules, templates |
+
+### Why pipeline steps are commands
+
+The pipeline is sequential and cumulative:
+
+```
+/start-task      → creates Slack thread, saves ticket ID
+/analyze-jira    → reads ticket ID from context, adds AC and findings
+/check-lessons   → reads task description from context, adds precautions
+/tdd-ralph       → reads AC + lessons + bug analysis from context, composes ralph-loop prompt
+/git-commit      → reads what was changed from context
+/create-pr       → reads all commits from context
+```
+
+Each step depends on what the previous steps produced. Commands share the conversation, so this context flows naturally. If these were agents, every step would need the full context serialized into the prompt — redundant and fragile.
+
+### Why code-reviewer is an agent
+
+The reviewer must give an **independent assessment**. If it ran as a command in the same session, it would be biased by the implementation decisions it watched being made. Isolation is the feature — the reviewer only sees the diff and the standards, not the reasoning behind shortcuts.
+
+### Why tech-lead is an agent
+
+Ticket creation is a **separate concern** from the pipeline. The tech-lead refines requirements, creates JIRA tickets, and optionally kicks off the pipeline. It doesn't need implementation context — it needs a clean slate to ask good clarifying questions. It can also run in parallel (create ticket while exploring codebase).
+
+### Why check-lessons and slack-rules are skills
+
+They're **reusable fragments** loaded into commands and agents, not standalone pipeline steps. `slack-rules` is a template injected into agent prompts so they post to the right thread. `check-lessons` is invoked before implementation to scan memory files.
+
+### Decision guide for new extensions
+
+```
+Need prior pipeline context?
+  YES → Command
+  NO  → Does it need a fresh perspective or parallelism?
+          YES → Agent
+          NO  → Is it a reusable snippet/template/rule set?
+                  YES → Skill
+                  NO  → Command (default)
+```
+
 ## What stays local (never symlinked)
 
 - `~/.claude/settings.json` — personal permissions
