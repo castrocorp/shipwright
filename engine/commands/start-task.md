@@ -21,8 +21,8 @@ Post to the Slack channel using the configured tool:
 
 ## Step 2: Thread Title Format
 Use a comprehensive title covering the ENTIRE task:
-- CORRECT: `🚀 ART-5311: [Full ticket title]`
-- WRONG: `Analysis: ART-5311` (too specific to one phase)
+- CORRECT: `🚀 XPTO-5311: [Full ticket title]`
+- WRONG: `Analysis: XPTO-5311` (too specific to one phase)
 
 ## Step 3: Persist Thread Timestamp to File
 

@@ -18,7 +18,7 @@ From the current conversation, extract:
 
 | Variable | Source | Example |
 |----------|--------|---------|
-| `TICKET_ID` | Branch name or JIRA analysis | `ART-7601` |
+| `TICKET_ID` | Branch name or JIRA analysis | `XPTO-7601` |
 | `SUMMARY` | JIRA summary or user description | Short task description |
 | `ACCEPTANCE_CRITERIA` | JIRA ticket or user requirements | Bulleted list |
 | `MODULE` | Affected build module | `artengine` |
