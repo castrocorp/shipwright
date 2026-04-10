@@ -44,7 +44,17 @@ description: Project-specific configuration for Claude Workflow Engine. Every wo
 - **Title format**: `<type>(<TICKET-ID>): <description>`
 - **JIRA link format**: `https://{SITE}.atlassian.net/browse/<TICKET-ID>`
 
+## Jira Defaults
+
+- **Team**: `{TEAM_NAME}` — custom field ID: `customfield_10001`, value: `{TEAM_ID}`
+- **Component / Session**: `{COMPONENT}` — custom field ID: `customfield_10048`
+- **Sprint resolution JQL**: `"Team[Team]" = "{TEAM_ID}" AND sprint in openSprints() ORDER BY created DESC`
+- **Assignee account ID**: `{ACCOUNT_ID}`
+- **Reporter account ID**: `{ACCOUNT_ID}` (default same as assignee)
+- **Default priority**: `Low`
+
 ## Agents
 
-- **Code reviewer**: `{REVIEWER_AGENT}` (agent name in `.claude/agents/`)
+- **Code reviewer**: `code-reviewer` (generic, from workflow engine)
+- **Dev agent**: (optional — e.g., `kotlin-spring-senior-dev` for implementation delegation)
 - **Cross-repo oracles**: (list agent names, or "none")
