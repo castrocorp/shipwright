@@ -148,17 +148,6 @@ Create Jira ticket
 DONE — report PR URL
 ```
 
-### Implementation Delegation
-
-For the implementation step, you have two options depending on project config:
-
-1. **Use `/tdd-ralph`** directly (default) — the command handles TDD + ralph-loop
-2. **Spawn a dev agent** via Task tool if `project.md` lists a dev agent (e.g., `kotlin-spring-senior-dev`) — pass the full refined context:
-   - Requirements and acceptance criteria
-   - Technical notes and affected modules
-   - Slack thread info
-   - Lessons learned from `/check-lessons`
-
 ---
 
 ## Slack Thread Management

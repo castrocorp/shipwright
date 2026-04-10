@@ -56,5 +56,4 @@ description: Project-specific configuration for Claude Workflow Engine. Every wo
 ## Agents
 
 - **Code reviewer**: `code-reviewer` (generic, from workflow engine)
-- **Dev agent**: (optional — e.g., `kotlin-spring-senior-dev` for implementation delegation)
 - **Cross-repo oracles**: (list agent names, or "none")
