@@ -1,5 +1,15 @@
 # Shipwright
 
+## Version Check (on session start)
+
+At the start of each conversation, read `~/.claude/.shipwright-update` (if it exists). If `status=available`, print a single line:
+
+```
+Shipwright update available: {current} → {latest}. Run /update-shipwright to update.
+```
+
+If the file is missing or `status=up-to-date`, say nothing.
+
 ## Project Config
 
 **CRITICAL**: Before ANY workflow step, read `.claude/project.md` for project-specific values (Slack channel, JIRA cloud ID, build commands, base branch, etc.). Never hardcode these values.
