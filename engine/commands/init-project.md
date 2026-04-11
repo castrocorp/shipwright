@@ -221,9 +221,16 @@ ls ~/.claude/plugins/cache/*/ralph-loop/ 2>/dev/null
 
 **IMPORTANT**: Do NOT check the skills list in your system prompt to determine if ralph-loop is installed. The engine references ralph-loop skills (`ralph-loop:help`, `ralph-loop:ralph-loop`) regardless of whether the plugin is installed. The skill references are always visible — they do NOT prove the plugin exists.
 
-**Only report as installed if plugin files exist on disk.** If no plugin files found → report as NOT INSTALLED.
+**Only report as installed if plugin files exist on disk.**
+
+If not found → **install it automatically**:
+1. Run: `Skill("ralph-loop:help")` — if it errors with "plugin not found" or similar, the plugin is truly missing
+2. Install it: suggest the user run `/plugin install ralph-loop` (plugins require interactive installation through Claude Code's plugin UI — they cannot be installed programmatically from a command prompt)
+3. After user confirms installation, run `/reload-plugins` to activate
 
 ralph-loop is the iterative TDD engine that powers `/tdd-ralph`. Without it, TDD falls back to manual Red-Green-Refactor (functional but significantly less powerful — no automatic retry loops, no iteration tracking, no completion detection).
+
+**Note**: This is the ONE step in init-project where user interaction is required — plugin installation goes through Claude Code's plugin UI.
 
 ## Step 10: MCP Configuration (no prompts)
 
