@@ -211,15 +211,17 @@ This ensures `/tdd-ralph` and `/code-review` always have stack-specific rules to
 
 ## Step 9.5: Detect ralph-loop Plugin
 
-Check if the ralph-loop plugin is installed:
+Check if the ralph-loop plugin is **actually installed** (not just referenced in engine skills):
+
 ```bash
-# Check if ralph-loop commands are available
-# Look for ralph-loop skill in available skills list
+# Check for plugin files on disk — this is the ONLY reliable method
+ls ~/.claude/plugins/*/ralph-loop/ 2>/dev/null
+ls ~/.claude/plugins/cache/*/ralph-loop/ 2>/dev/null
 ```
 
-Try invoking a lightweight ralph-loop probe (e.g., `/ralph-loop:help`).
-- If available → report as installed
-- If not available → flag in the report with installation guidance
+**IMPORTANT**: Do NOT check the skills list in your system prompt to determine if ralph-loop is installed. The engine references ralph-loop skills (`ralph-loop:help`, `ralph-loop:ralph-loop`) regardless of whether the plugin is installed. The skill references are always visible — they do NOT prove the plugin exists.
+
+**Only report as installed if plugin files exist on disk.** If no plugin files found → report as NOT INSTALLED.
 
 ralph-loop is the iterative TDD engine that powers `/tdd-ralph`. Without it, TDD falls back to manual Red-Green-Refactor (functional but significantly less powerful — no automatic retry loops, no iteration tracking, no completion detection).
 
