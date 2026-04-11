@@ -143,9 +143,17 @@ verify_tag() {
     echo ""
     echo "$verify_output" | head -5
     echo ""
-    echo "  The tag signature could not be verified."
-    echo "  This may indicate a compromised release."
-    echo "  DO NOT proceed unless you trust the source."
+    # Check if it's a missing key vs actual bad signature
+    if echo "$verify_output" | grep -qi "no public key\|not found\|unknown"; then
+        echo "  The signing key is not in your keyring. Import it with:"
+        echo "    gpg --import $SCRIPT_DIR/PUBKEY.asc"
+        echo "  Or from a keyserver:"
+        echo "    gpg --keyserver keys.openpgp.org --recv-keys A8697988B2D8E6C579651CE03DCF9E5E79224F67"
+    else
+        echo "  The tag signature could not be verified."
+        echo "  This may indicate a compromised release."
+        echo "  DO NOT proceed unless you trust the source."
+    fi
     echo ""
     read -p "  Continue anyway? (NOT RECOMMENDED) [y/N] " -n 1 -r
     echo ""

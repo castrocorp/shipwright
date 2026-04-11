@@ -166,6 +166,16 @@ Every release tag is GPG-signed. The updater verifies the signature before apply
 
 You can bypass verification with `--skip-verify` (not recommended for public forks).
 
+**To verify signatures**, import the maintainer's public key:
+
+```bash
+# From the repo
+gpg --import PUBKEY.asc
+
+# Or from a keyserver
+gpg --keyserver keys.openpgp.org --recv-keys A8697988B2D8E6C579651CE03DCF9E5E79224F67
+```
+
 **For maintainers** — to sign a release:
 
 ```bash
