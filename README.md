@@ -99,7 +99,7 @@ chmod +x install.sh && ./install.sh    # Mac/Linux
 
 # Initialize your project
 cd /path/to/your/project
-/init-project
+/init-shipwright
 
 # Fill in any {PLACEHOLDER} values
 $EDITOR .claude/project.md
@@ -139,7 +139,7 @@ Three layers, from general to specific:
 | Personal overrides | `~/.claude/CLAUDE.local.md` | All projects |
 | Project config | `.claude/project.md` | One project |
 
-Run `/init-project` to auto-detect stack, build tool, base branch, and MCP servers.
+Run `/init-shipwright` to auto-detect stack, build tool, base branch, and MCP servers.
 
 ## Updating
 

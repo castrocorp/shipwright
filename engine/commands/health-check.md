@@ -35,7 +35,7 @@ cat ~/.claude/.shipwright-update 2>/dev/null
 ## Step 3: Check Project Configuration
 
 Read `.claude/project.md`:
-- If missing → ERROR: "No project config. Run /init-project."
+- If missing → ERROR: "No project config. Run /init-shipwright."
 - If present → scan for `{PLACEHOLDER}` patterns (any value still in braces)
 
 Report:
