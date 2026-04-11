@@ -15,6 +15,8 @@ The command that launches you will include:
 - **DIFF**: Full `git diff` of changes
 - **CHANGED_FILES**: List of changed file paths
 - **COMMIT_LOG**: Commits on this branch
+- **GIT_HISTORY**: Pre-computed `git log` and `git blame` for changed files (recent history and authorship)
+- **RECENT_PRS** (optional): Pre-computed list of recent merged PRs touching the same files
 - **STACK_RULES**: Language-specific code quality rules (from the stack adapter)
 - **PROJECT_STANDARDS**: Relevant CLAUDE.md rules
 - **JIRA_CONTEXT** (optional): Acceptance criteria, if a JIRA ticket is involved
@@ -72,13 +74,13 @@ Read the changed code and scan for bugs:
 - **Inconsistent guards across code paths**: If paginated and non-paginated paths exist, do both apply the same authorization checks?
 
 #### Dimension 4: Git History Context
-Use `git log -5 --oneline -- <file>` and `git blame -L <range> <file>` to identify:
+Using the provided `GIT_HISTORY` (pre-computed by the calling command), identify:
 - Patterns being violated that the file historically followed
 - Recent bug fixes in the same area (regression risk)
 - TODO/FIXME comments being ignored
 
 #### Dimension 5: Previous PR Context
-Use `gh pr list --state merged --search "<filename>" --limit 3` to find related merged PRs and check:
+Using the provided `RECENT_PRS` (pre-computed by the calling command, if available), check:
 - Review comments on recent PRs for the same files or area
 - Recurring issues or review themes
 

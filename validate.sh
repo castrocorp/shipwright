@@ -18,7 +18,7 @@ echo "======================"
 echo ""
 
 # ---------- 1. Commands: frontmatter ----------
-echo "[1/10] Checking command frontmatter..."
+echo "[1/11] Checking command frontmatter..."
 
 for f in "$ENGINE_DIR"/commands/*.md; do
     name=$(basename "$f")
@@ -35,7 +35,7 @@ done
 echo ""
 
 # ---------- 2. Agents: frontmatter ----------
-echo "[2/10] Checking agent frontmatter..."
+echo "[2/11] Checking agent frontmatter..."
 
 for f in "$ENGINE_DIR"/agents/*.md; do
     name=$(basename "$f")
@@ -55,7 +55,7 @@ done
 echo ""
 
 # ---------- 3. Skills: frontmatter ----------
-echo "[3/10] Checking skill frontmatter..."
+echo "[3/11] Checking skill frontmatter..."
 
 for f in "$ENGINE_DIR"/skills/*/SKILL.md; do
     name=$(echo "$f" | sed "s|$ENGINE_DIR/skills/||" | sed 's|/SKILL.md||')
@@ -72,7 +72,7 @@ done
 echo ""
 
 # ---------- 4. Template placeholders vs command references ----------
-echo "[4/10] Checking placeholder coverage..."
+echo "[4/11] Checking placeholder coverage..."
 
 # Extract placeholders that commands expect from project.md
 # These are the config keys commands read via "Read .claude/project.md for: X, Y, Z"
@@ -88,7 +88,7 @@ done
 echo ""
 
 # ---------- 5. Prompts: existence check ----------
-echo "[5/10] Checking prompt templates..."
+echo "[5/11] Checking prompt templates..."
 
 if [ -d "$ENGINE_DIR/prompts" ]; then
     for f in "$ENGINE_DIR"/prompts/*.md; do
@@ -106,12 +106,14 @@ fi
 echo ""
 
 # ---------- 6. Stacks: frontmatter ----------
-echo "[6/10] Checking stack adapter frontmatter..."
+echo "[6/11] Checking stack adapter frontmatter..."
 
 if [ -d "$ENGINE_DIR/stacks" ]; then
     for f in "$ENGINE_DIR"/stacks/*.md; do
         [ -f "$f" ] || continue
         name=$(basename "$f")
+        # Skip template file
+        [ "$name" = "_template.md" ] && { ok "$name (template)"; continue; }
         if ! head -1 "$f" | grep -q "^---$"; then
             error "$name — missing frontmatter (no opening ---)"
             continue
@@ -128,7 +130,7 @@ fi
 echo ""
 
 # ---------- 7. Rules: existence ----------
-echo "[7/10] Checking rules..."
+echo "[7/11] Checking rules..."
 
 if [ -d "$ENGINE_DIR/rules" ]; then
     count=0
@@ -147,7 +149,7 @@ fi
 echo ""
 
 # ---------- 8. install.sh references all engine dirs ----------
-echo "[8/10] Checking install.sh coverage..."
+echo "[8/11] Checking install.sh coverage..."
 
 for dir in "$ENGINE_DIR"/*/; do
     dirname=$(basename "$dir")
@@ -156,12 +158,12 @@ for dir in "$ENGINE_DIR"/*/; do
     if grep -q "\"$dirname\"" "$INSTALLER"; then
         ok "install.sh includes $dirname"
     else
-        warn "install.sh does not reference $dirname — it won't be symlinked"
+        warn "install.sh does not reference $dirname — it won't be installed"
     fi
 done
 
-# Also check CLAUDE.md is in the items list
-if grep -q '"CLAUDE.md"' "$INSTALLER"; then
+# Also check CLAUDE.md is referenced
+if grep -q 'CLAUDE.md' "$INSTALLER"; then
     ok "install.sh includes CLAUDE.md"
 else
     warn "install.sh does not reference CLAUDE.md"
@@ -169,7 +171,7 @@ fi
 echo ""
 
 # ---------- 9. Engine CLAUDE.md: required sections ----------
-echo "[9/10] Checking engine CLAUDE.md..."
+echo "[9/11] Checking engine CLAUDE.md..."
 
 ENGINE_CLAUDE="$ENGINE_DIR/CLAUDE.md"
 if [ -f "$ENGINE_CLAUDE" ]; then
@@ -187,7 +189,7 @@ fi
 echo ""
 
 # ---------- 10. Stack references in template ----------
-echo "[10/10] Checking stack references in template..."
+echo "[10/11] Checking stack references in template..."
 
 if [ -f "$TEMPLATE" ] && [ -d "$ENGINE_DIR/stacks" ]; then
     # Extract stack names referenced as defaults in the template
@@ -205,6 +207,24 @@ if [ -f "$TEMPLATE" ] && [ -d "$ENGINE_DIR/stacks" ]; then
     fi
 else
     ok "skipped (template or stacks dir missing)"
+fi
+echo ""
+
+# ---------- 11. VERSION file ----------
+echo "[11/11] Checking VERSION file..."
+
+if [ -f "$SCRIPT_DIR/VERSION" ]; then
+    FILE_VER=$(cat "$SCRIPT_DIR/VERSION" | tr -d '[:space:]')
+    TAG_VER=$(git -C "$SCRIPT_DIR" tag -l 'v*' --sort=-v:refnum 2>/dev/null | head -1 | sed 's/^v//')
+    if [ -z "$TAG_VER" ]; then
+        ok "VERSION ($FILE_VER) — no git tags to compare"
+    elif [ "$FILE_VER" = "$TAG_VER" ]; then
+        ok "VERSION ($FILE_VER) matches latest tag"
+    else
+        warn "VERSION ($FILE_VER) does not match latest tag ($TAG_VER) — update VERSION before tagging a release"
+    fi
+else
+    error "VERSION file missing — create it with the current version number"
 fi
 echo ""
 

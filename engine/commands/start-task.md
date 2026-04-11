@@ -7,6 +7,14 @@ description: Initialize a new task with Slack thread creation, file persistence,
 ## Step 0: Load Project Config
 Read `.claude/project.md` and extract: `SLACK_CHANNEL`, `SLACK_TOOL`, `JIRA_CLOUD_ID`.
 
+## Step 0.1: Version Check (non-blocking)
+
+Read `~/.claude/.shipwright-update` (if it exists). If `status=available`:
+```
+NOTE: Shipwright update available: {current} → {latest}. Run /update-shipwright to update.
+```
+If the file is missing or `status=up-to-date`, skip silently. Never block the workflow for this.
+
 ## Step 0.5: Probe Integrations
 
 Check which integrations are available. Do NOT stop if any is missing — adapt the workflow.

@@ -37,6 +37,20 @@ git diff {BASE_BRANCH}...HEAD                # Full diff
 git log {BASE_BRANCH}..HEAD --oneline        # Commits on this branch
 ```
 
+**Pre-compute git history** for the reviewer agent (the agent cannot run shell commands):
+
+For each changed file, collect:
+```bash
+git log -5 --oneline -- <file>               # Recent history per file
+git blame -L <changed-ranges> <file>         # Authorship of surrounding code
+```
+
+**Pre-compute PR context** (if `gh` CLI is available):
+```bash
+gh pr list --state merged --search "<filename>" --limit 3 --json title,url,number
+```
+If `gh` is unavailable, omit `RECENT_PRS` from the prompt — the agent handles its absence gracefully.
+
 Read all CLAUDE.md files relevant to the changed directories.
 
 Assemble the agent prompt with these sections:
@@ -46,6 +60,8 @@ Assemble the agent prompt with these sections:
 | `DIFF` | `git diff {BASE_BRANCH}...HEAD` |
 | `CHANGED_FILES` | `git diff {BASE_BRANCH}...HEAD --name-only` |
 | `COMMIT_LOG` | `git log {BASE_BRANCH}..HEAD --oneline` |
+| `GIT_HISTORY` | Pre-computed `git log` + `git blame` per changed file |
+| `RECENT_PRS` | Pre-computed from `gh pr list` (omit if `gh` unavailable) |
 | `STACK_RULES` | Contents of `~/.claude/stacks/{STACK}.md` |
 | `PROJECT_STANDARDS` | Relevant CLAUDE.md sections |
 | `JIRA_CONTEXT` | Acceptance criteria from `/analyze-jira` (if available in conversation) |

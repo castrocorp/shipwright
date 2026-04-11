@@ -34,17 +34,22 @@ Multiple tickets? They run in parallel with isolated git worktrees:
 engine/
   CLAUDE.md          — Workflow pipeline and orchestration
   agents/            — Isolated agents (code-reviewer, tech-lead)
-  commands/          — Pipeline steps (start-task, tdd-ralph, code-review, etc.)
+  commands/          — Pipeline steps (start-task, tdd-ralph, health-check, etc.)
   prompts/           — Reusable prompt templates (worker-agent)
   rules/             — Universal rules auto-loaded by Claude Code
   skills/            — Reusable skills (check-lessons, slack-rules, parallel-implement)
   stacks/            — Language/framework adapters (kotlin-spring, etc.)
+VERSION              — Current version number
+update.sh            — Update to latest version
+check-update.sh      — Background version check (non-blocking)
 template/
   project.md         — Template for per-project configuration
   mcp.json           — Pre-configured MCP servers (Slack, Atlassian, Notion)
   user-claude.md     — Template for personal overrides (~/.claude/CLAUDE.local.md)
-install.sh           — Mac/Linux installer
+install.sh           — Mac/Linux installer (per-file merge for rules/stacks)
 install.ps1          — Windows installer
+uninstall.sh         — Mac/Linux uninstaller (removes only engine symlinks)
+uninstall.ps1        — Windows uninstaller
 validate.sh          — Validates engine structure
 ```
 
@@ -97,10 +102,81 @@ Three layers, from general to specific:
 |-------|------|-------|
 | Engine workflow | `~/.claude/CLAUDE.md` (symlinked) | All projects |
 | Universal rules | `~/.claude/rules/*.md` (symlinked) | All projects, auto-loaded |
+| Stack adapters | `~/.claude/stacks/{stack}.md` (symlinked) | Per-stack, referenced by project config |
 | Personal overrides | `~/.claude/CLAUDE.local.md` | All projects |
 | Project config | `.claude/project.md` | One project |
 
 Run `/init-project` to auto-detect stack, build tool, base branch, and MCP servers.
+
+## Updating
+
+```bash
+# Check for updates
+./update.sh --check
+
+# Update to latest version
+./update.sh
+
+# Update to a specific version
+./update.sh --version v1.2.0
+```
+
+For automatic background checks, add the hook from `template/hooks.md` to your `settings.json`. Shipwright will show a one-line notice at `/start-task` when an update is available.
+
+## Uninstalling
+
+```bash
+./uninstall.sh       # Mac/Linux
+.\uninstall.ps1      # Windows (PowerShell)
+```
+
+The uninstaller removes only engine-owned symlinks. Your personal files (`CLAUDE.local.md`, user rules, settings, projects, plugins) are never touched.
+
+## Extending Shipwright
+
+### Adding a stack adapter
+
+1. Copy `engine/stacks/_template.md` to `engine/stacks/{your-stack}.md`
+2. Fill in language-specific rules (style, linting, testing, conventions)
+3. Set `Stack: {your-stack}` in your project's `.claude/project.md`
+4. The adapter is automatically injected into `/tdd-ralph` and `/code-review`
+
+### Adding a command
+
+1. Create `engine/commands/{your-command}.md` with frontmatter:
+   ```yaml
+   ---
+   description: What this command does
+   ---
+   ```
+2. Follow the standard pattern: load config → probe integrations → execute → fallback → report
+3. If it's part of the pipeline, add it to the workflow sequence in `engine/CLAUDE.md`
+4. Run `./validate.sh` to verify
+
+### Adding an agent
+
+1. Create `engine/agents/{your-agent}.md` with frontmatter:
+   ```yaml
+   ---
+   name: your-agent
+   description: "When to use this agent"
+   model: opus
+   ---
+   ```
+2. Agents receive ALL context via the prompt — they do NOT read config files or run shell commands
+3. Reference the agent in commands via `Agent({ subagent_type: "your-agent" })`
+
+### Adding a rule
+
+1. Create `engine/rules/{your-rule}.md` (no frontmatter required)
+2. For file-type-specific rules, add `paths:` frontmatter:
+   ```yaml
+   ---
+   paths:
+     - "**/*.py"
+   ---
+   ```
+3. Rules are auto-loaded by Claude Code after `install.sh` symlinks them
 
 ## License
 

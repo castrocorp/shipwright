@@ -36,9 +36,10 @@ function Backup-IfExists($path) {
     }
 }
 
-$items = @("CLAUDE.md", "agents", "commands", "prompts", "rules", "skills", "stacks")
+# --- Directory symlinks (engine-owned) ---
+$dirItems = @("agents", "commands", "prompts", "skills")
 
-foreach ($item in $items) {
+foreach ($item in $dirItems) {
     $src = Join-Path $EngineDir $item
     $dest = Join-Path $ClaudeDir $item
 
@@ -49,14 +50,74 @@ foreach ($item in $items) {
 
     Backup-IfExists $dest
     New-Item -ItemType SymbolicLink -Path $dest -Target $src | Out-Null
-    Write-Host "  Linked: $item -> $src"
+    Write-Host "  Linked: $item/ -> $src"
 }
 
-# Verify critical symlinks
+# --- File symlink (CLAUDE.md) ---
+$claudeMdDest = Join-Path $ClaudeDir "CLAUDE.md"
+Backup-IfExists $claudeMdDest
+New-Item -ItemType SymbolicLink -Path $claudeMdDest -Target (Join-Path $EngineDir "CLAUDE.md") | Out-Null
+Write-Host "  Linked: CLAUDE.md -> $(Join-Path $EngineDir 'CLAUDE.md')"
+
+# --- Per-file merge (rules/ and stacks/) ---
+$mergeItems = @("rules", "stacks")
+
+foreach ($item in $mergeItems) {
+    $srcDir = Join-Path $EngineDir $item
+    $destDir = Join-Path $ClaudeDir $item
+
+    if (-not (Test-Path $srcDir)) {
+        Write-Host "  Skip: $item (not found in engine/)"
+        continue
+    }
+
+    # If dest is a symlink to a directory, replace with real directory
+    if (Test-Path $destDir) {
+        $destItem = Get-Item $destDir -Force
+        if ($destItem.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            $destItem.Delete()
+            New-Item -ItemType Directory -Path $destDir | Out-Null
+            Write-Host "  Converted: $item/ from directory symlink to per-file merge"
+        }
+    }
+
+    if (-not (Test-Path $destDir)) {
+        New-Item -ItemType Directory -Path $destDir | Out-Null
+    }
+
+    $engineCount = 0
+    $userCount = 0
+
+    foreach ($f in Get-ChildItem -Path $srcDir -Filter "*.md") {
+        $destFile = Join-Path $destDir $f.Name
+
+        if (Test-Path $destFile) {
+            $existing = Get-Item $destFile -Force
+            if ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                # Existing engine symlink — update
+                $existing.Delete()
+                New-Item -ItemType SymbolicLink -Path $destFile -Target $f.FullName | Out-Null
+                $engineCount++
+            } else {
+                # Real file — user-owned, skip
+                $userCount++
+            }
+        } else {
+            # New engine file — create symlink
+            New-Item -ItemType SymbolicLink -Path $destFile -Target $f.FullName | Out-Null
+            $engineCount++
+        }
+    }
+
+    Write-Host "  Merged: $item/ - $engineCount engine file(s) symlinked, $userCount user file(s) preserved"
+}
+
+# Verify
 Write-Host ""
-Write-Host "Verifying symlinks..."
+Write-Host "Verifying installation..."
 $fail = $false
-foreach ($item in $items) {
+$allItems = @("CLAUDE.md") + $dirItems + $mergeItems
+foreach ($item in $allItems) {
     $dest = Join-Path $ClaudeDir $item
     if (-not (Test-Path $dest)) {
         Write-Host "  FAIL: $dest does not exist"
@@ -64,15 +125,32 @@ foreach ($item in $items) {
     }
 }
 if (-not $fail) {
-    Write-Host "  All symlinks verified."
+    Write-Host "  All items verified."
 }
+
+# Write version marker
+$versionFile = Join-Path $ScriptDir "VERSION"
+if (Test-Path $versionFile) {
+    $version = (Get-Content $versionFile -Raw).Trim()
+} else {
+    $version = "unknown"
+}
+$marker = Join-Path $ClaudeDir ".shipwright-version"
+@"
+version=$version
+repo=$ScriptDir
+installed=$((Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss"))
+"@ | Set-Content $marker
+Write-Host "  Version: $version (recorded in $marker)"
 
 Write-Host ""
 Write-Host "Done. The following were NOT touched:"
+Write-Host "  - $ClaudeDir\CLAUDE.local.md (personal overrides)"
 Write-Host "  - $ClaudeDir\settings.json"
 Write-Host "  - $ClaudeDir\settings.local.json"
 Write-Host "  - $ClaudeDir\plugins\"
 Write-Host "  - $ClaudeDir\projects\"
+Write-Host "  - User files in $ClaudeDir\rules\ and $ClaudeDir\stacks\"
 Write-Host ""
 Write-Host "Next steps:"
 Write-Host "  1. cd \path\to\your\project; then run /init-project (or copy template\project.md to .claude\project.md)"
