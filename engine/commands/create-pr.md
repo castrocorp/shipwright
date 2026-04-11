@@ -85,8 +85,14 @@ If `.slack-thread` exists, post PR URL and details to existing thread. Otherwise
 
 If `JIRA_AVAILABLE`:
 1. `getTransitionsForJiraIssue(issue_key: "{TICKET_ID}")`
-2. Find transition containing "Code Review" or "Review"
-3. `transitionJiraIssue(issue_key: "{TICKET_ID}", transition_id: "{FOUND_ID}")`
+2. Find the transition whose name best represents "code review" (case-insensitive). Common names across Scrum/Kanban/custom workflows:
+   - "Code Review", "In Review", "In Code Review"
+   - "Peer Review", "Review", "Reviewing"
+   - "Ready for Review", "Awaiting Review"
+   - "PR Review", "Pull Request Review"
+   Pick the first match. If multiple match, prefer the one containing "Code Review" or "Review".
+3. If no match found, log all available transitions and skip — do NOT stop the workflow.
+4. `transitionJiraIssue(issue_key: "{TICKET_ID}", transition_id: "{FOUND_ID}")`
 
 If transition fails, log and continue.
 

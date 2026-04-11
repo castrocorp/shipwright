@@ -74,8 +74,14 @@ grep -q "^\.slack-thread$" .gitignore 2>/dev/null || echo ".slack-thread" >> .gi
 
 If `JIRA_AVAILABLE` and a JIRA ticket ID is available:
 1. `getTransitionsForJiraIssue(issue_key: "{TICKET_ID}")`
-2. Find the transition with name containing "In Progress"
-3. `transitionJiraIssue(issue_key: "{TICKET_ID}", transition_id: "{FOUND_ID}")`
+2. Find the transition whose name best represents "active development" (case-insensitive). Common names across Scrum/Kanban/custom workflows:
+   - "In Progress", "In Development", "In Dev"
+   - "Start Progress", "Start Development", "Begin Work"
+   - "Development", "Developing", "Doing"
+   - "Active", "Working", "WIP"
+   Pick the first match. If multiple match, prefer the one containing "Progress" or "Development".
+3. If no match found, log all available transitions and skip — do NOT stop the workflow.
+4. `transitionJiraIssue(issue_key: "{TICKET_ID}", transition_id: "{FOUND_ID}")`
 
 If the transition fails, log it and continue — do NOT stop the workflow.
 
