@@ -145,14 +145,24 @@ Try a lightweight Notion call (e.g., `search`).
 
 ## Step 7: Configure Agents
 
+Check both levels for available agents:
+
 ```bash
-# Check for project-level agents
+# 1. Project-level agents (repo-specific)
 ls .claude/agents/*.md 2>/dev/null
+
+# 2. User-level agents (installed by Shipwright's install.sh)
+ls ~/.claude/agents/*.md 2>/dev/null
 ```
 
-If a project-level code reviewer agent exists, use its name.
-Otherwise, default to `code-reviewer` (the generic reviewer shipped with Shipwright's engine).
+**Resolution order**:
+1. If a project-level code reviewer exists → use it (project overrides engine)
+2. If engine agents exist at `~/.claude/agents/` → use `code-reviewer` (engine default)
+3. If neither found → warn: `install.sh may not have run. Run it from the Shipwright repo to install engine agents.`
+
 Never leave the reviewer as a placeholder — the engine always provides a default.
+
+Report all available agents (from both levels) in the final summary.
 
 ## Step 8: Detect Language/Framework Versions
 
