@@ -209,6 +209,20 @@ If it does NOT exist, **generate a base adapter** from the template:
 
 This ensures `/tdd-ralph` and `/code-review` always have stack-specific rules to work with, even on first run.
 
+## Step 9.5: Detect ralph-loop Plugin
+
+Check if the ralph-loop plugin is installed:
+```bash
+# Check if ralph-loop commands are available
+# Look for ralph-loop skill in available skills list
+```
+
+Try invoking a lightweight ralph-loop probe (e.g., `/ralph-loop:help`).
+- If available → report as installed
+- If not available → flag in the report with installation guidance
+
+ralph-loop is the iterative TDD engine that powers `/tdd-ralph`. Without it, TDD falls back to manual Red-Green-Refactor (functional but significantly less powerful — no automatic retry loops, no iteration tracking, no completion detection).
+
 ## Step 10: MCP Configuration (no prompts)
 
 Do NOT ask the user about MCP setup. Just detect and report.
@@ -298,12 +312,19 @@ Detected:
   ✅ Slack channel: <your-channel-id>
   ✅ MCP servers: .mcp.json (Slack, Atlassian, Notion)
 
+Plugins:
+  ✅ ralph-loop: installed          # or:
+  ⚠️  ralph-loop: NOT INSTALLED
+     └ /tdd-ralph will fall back to manual TDD (no iterative loop).
+       Install ralph-loop for automatic Red-Green-Refactor cycles
+       with retry, iteration tracking, and completion detection.
+       Run: /plugin install ralph-loop
+
 Needs manual input:
   ⚠️  Lint format policy (FORBIDDEN or command)
   ⚠️  Additional repo mappings for parallel-implement
-  ⚠️  Environment variables for MCP credentials (see above)
 
-Generated: .claude/project.md, .mcp.json
+Generated: .claude/project.md
 Review and adjust values marked with {PLACEHOLDER}.
 ```
 
