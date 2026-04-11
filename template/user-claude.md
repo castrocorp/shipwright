@@ -19,7 +19,7 @@
 
 ## Identity
 - **JIRA account ID**: `abc123def456`
-- **Slack DM channel**: `U077ADYKWKV`
+- **Slack DM channel**: `{YOUR_SLACK_CHANNEL_ID}`
 
 ## Preferences
 - Respond in Portuguese when I write in Portuguese

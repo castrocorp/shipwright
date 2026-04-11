@@ -35,13 +35,13 @@ From the current conversation, extract:
 | `TICKET_ID` | Branch name or JIRA analysis | `XPTO-7601` |
 | `SUMMARY` | JIRA summary or user description | Short task description |
 | `ACCEPTANCE_CRITERIA` | JIRA ticket or user requirements | Bulleted list |
-| `MODULE` | Affected build module | `artengine` |
-| `TEST_CLASS` | Primary test class name | `DmsFolderServiceTest` |
+| `MODULE` | Affected build module | `my-module` |
+| `TEST_CLASS` | Primary test class name | `MyServiceTest` |
 | `LESSONS` | Findings from `/check-lessons` | Relevant patterns |
 | `BUG_CONTEXT` | From `/bug-analyze` (bugs only) | Root cause analysis |
-| `BUILD_TEST_CMD` | From `project.md` | `gw :artengine:test --tests` |
-| `BUILD_LINT_CMD` | From `project.md` | `gw :artengine:ktlintCheck` |
-| `BUILD_COMPILE_CMD` | From `project.md` | `gw :artengine:compileKotlin` |
+| `BUILD_TEST_CMD` | From `project.md` | `{BUILD_CMD} :{MODULE}:test --tests` |
+| `BUILD_LINT_CMD` | From `project.md` | `{BUILD_CMD} :{MODULE}:lintCheck` |
+| `BUILD_COMPILE_CMD` | From `project.md` | `{BUILD_CMD} :{MODULE}:compile` |
 | `STACK_RULES` | From `stacks/{STACK}.md` | Code quality checklist |
 
 If a value is ambiguous, infer from the codebase — do NOT stop to ask.
