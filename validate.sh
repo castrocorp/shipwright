@@ -215,7 +215,7 @@ echo "[11/11] Checking VERSION file..."
 
 if [ -f "$SCRIPT_DIR/VERSION" ]; then
     FILE_VER=$(cat "$SCRIPT_DIR/VERSION" | tr -d '[:space:]')
-    TAG_VER=$(git -C "$SCRIPT_DIR" tag -l 'v*' --sort=-v:refnum 2>/dev/null | head -1 | sed 's/^v//')
+    TAG_VER=$(git -C "$SCRIPT_DIR" tag -l 'v*' --sort=-v:refname 2>/dev/null | head -1 | sed 's/^v//')
     if [ -z "$TAG_VER" ]; then
         ok "VERSION ($FILE_VER) — no git tags to compare"
     elif [ "$FILE_VER" = "$TAG_VER" ]; then

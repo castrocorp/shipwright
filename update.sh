@@ -74,7 +74,7 @@ if [ -n "$TARGET_VERSION" ]; then
     [[ "$TARGET_TAG" != v* ]] && TARGET_TAG="v$TARGET_TAG"
 else
     # Find latest semver tag (sorted by version, descending)
-    TARGET_TAG=$(git -C "$SCRIPT_DIR" tag -l 'v*' --sort=-v:refnum 2>/dev/null | head -1)
+    TARGET_TAG=$(git -C "$SCRIPT_DIR" tag -l 'v*' --sort=-v:refname 2>/dev/null | head -1)
 fi
 
 if [ -z "$TARGET_TAG" ]; then

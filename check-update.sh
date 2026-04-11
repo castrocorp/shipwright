@@ -46,7 +46,7 @@ wait $FETCH_PID 2>/dev/null
 kill $TIMEOUT_PID 2>/dev/null
 
 # Find latest semver tag from locally available tags
-LATEST_TAG=$(git -C "$SCRIPT_DIR" tag -l 'v*' --sort=-v:refnum 2>/dev/null | head -1)
+LATEST_TAG=$(git -C "$SCRIPT_DIR" tag -l 'v*' --sort=-v:refname 2>/dev/null | head -1)
 LATEST=${LATEST_TAG#v}
 
 # No tags found — nothing to compare
