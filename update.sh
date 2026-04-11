@@ -145,10 +145,32 @@ verify_tag() {
     echo ""
     # Check if it's a missing key vs actual bad signature
     if echo "$verify_output" | grep -qi "no public key\|not found\|unknown"; then
-        echo "  The signing key is not in your keyring. Import it with:"
-        echo "    gpg --import $SCRIPT_DIR/PUBKEY.asc"
-        echo "  Or from a keyserver:"
-        echo "    gpg --keyserver keys.openpgp.org --recv-keys A8697988B2D8E6C579651CE03DCF9E5E79224F67"
+        # Auto-import the maintainer's key from the repo
+        if [ -f "$SCRIPT_DIR/PUBKEY.asc" ]; then
+            echo "  The signing key is not in your GPG keyring."
+            echo "  Importing the maintainer's public key from PUBKEY.asc..."
+            echo "  (This key is shipped with the repo so you can verify release signatures.)"
+            echo ""
+            gpg --import "$SCRIPT_DIR/PUBKEY.asc" 2>&1 | sed 's/^/  /'
+            echo ""
+
+            # Retry verification after import
+            if git -C "$SCRIPT_DIR" tag -v "$tag" &>/dev/null; then
+                local signer_retry
+                signer_retry=$(git -C "$SCRIPT_DIR" tag -v "$tag" 2>&1 | grep "^gpg:.*Good signature" || true)
+                if [ -n "$signer_retry" ]; then
+                    echo "  Signature: VERIFIED (after key import)"
+                    echo "  $signer_retry"
+                    return 0
+                fi
+            fi
+
+            echo "  Key imported but signature still could not be verified."
+        else
+            echo "  The signing key is not in your keyring and PUBKEY.asc is missing."
+            echo "  Import manually:"
+            echo "    gpg --keyserver keys.openpgp.org --recv-keys A8697988B2D8E6C579651CE03DCF9E5E79224F67"
+        fi
     else
         echo "  The tag signature could not be verified."
         echo "  This may indicate a compromised release."
