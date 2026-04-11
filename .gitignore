@@ -9,3 +9,6 @@ Thumbs.db
 
 # Local overrides
 *.local.*
+
+# Submission drafts
+awesome-submission.md
