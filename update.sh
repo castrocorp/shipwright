@@ -110,23 +110,24 @@ verify_tag() {
         return 0
     fi
 
+    # Force English GPG output regardless of system locale
+    # Without this, non-English systems (e.g., Portuguese: "Assinatura válida")
+    # break the string matching for "Good signature"
+    local GPG_ENV="LANG=C LC_ALL=C"
+
     # Attempt signature verification
-    if git -C "$SCRIPT_DIR" tag -v "$tag" &>/dev/null; then
-        local signer
-        signer=$(git -C "$SCRIPT_DIR" tag -v "$tag" 2>&1 | grep "^gpg:.*Good signature" || true)
-        if [ -n "$signer" ]; then
-            echo "  Signature: VERIFIED"
-            echo "  $signer"
-            return 0
-        fi
+    local verify_output
+    verify_output=$(eval "$GPG_ENV git -C \"$SCRIPT_DIR\" tag -v \"$tag\" 2>&1" || true)
+
+    # Success: good signature from a trusted key
+    if echo "$verify_output" | grep -q "Good signature"; then
+        echo "  Signature: VERIFIED"
+        echo "  $(echo "$verify_output" | grep "Good signature")"
+        return 0
     fi
 
-    # Analyze why verification failed
-    local verify_output
-    verify_output=$(git -C "$SCRIPT_DIR" tag -v "$tag" 2>&1 || true)
-
-    # Case: tag exists but has no signature at all
-    if echo "$verify_output" | grep -q "no signature"; then
+    # Case: tag has no signature at all
+    if echo "$verify_output" | grep -qi "no signature"; then
         echo "  Signature: NOT SIGNED (tag has no GPG signature)"
         echo ""
         echo "  This tag was not signed by the maintainer."
@@ -138,40 +139,43 @@ verify_tag() {
         return 0
     fi
 
-    # Case: signature exists but is invalid or from untrusted key
-    echo "  Signature: FAILED"
-    echo ""
-    echo "$verify_output" | head -5
-    echo ""
-    # Check if it's a missing key vs actual bad signature
-    if echo "$verify_output" | grep -qi "no public key\|not found\|unknown"; then
-        # Auto-import the maintainer's key from the repo
+    # Case: key not in keyring — auto-import from PUBKEY.asc
+    if echo "$verify_output" | grep -qi "no public key\|NO_PUBKEY\|not found"; then
         if [ -f "$SCRIPT_DIR/PUBKEY.asc" ]; then
-            echo "  The signing key is not in your GPG keyring."
-            echo "  Importing the maintainer's public key from PUBKEY.asc..."
-            echo "  (This key is shipped with the repo so you can verify release signatures.)"
+            echo "  Signing key not in your keyring. Importing from PUBKEY.asc..."
+            echo "  (This key is shipped with the repo to verify release signatures.)"
             echo ""
+
+            # Import key and set trust to full (avoids "untrusted" warnings)
             gpg --import "$SCRIPT_DIR/PUBKEY.asc" 2>&1 | sed 's/^/  /'
+            local key_id
+            key_id=$(gpg --with-colons --import-options show-only --import "$SCRIPT_DIR/PUBKEY.asc" 2>/dev/null | grep "^fpr:" | head -1 | cut -d: -f10)
+            if [ -n "$key_id" ]; then
+                echo "$key_id:6:" | gpg --import-ownertrust 2>/dev/null
+            fi
             echo ""
 
             # Retry verification after import
-            if git -C "$SCRIPT_DIR" tag -v "$tag" &>/dev/null; then
-                local signer_retry
-                signer_retry=$(git -C "$SCRIPT_DIR" tag -v "$tag" 2>&1 | grep "^gpg:.*Good signature" || true)
-                if [ -n "$signer_retry" ]; then
-                    echo "  Signature: VERIFIED (after key import)"
-                    echo "  $signer_retry"
-                    return 0
-                fi
+            local retry_output
+            retry_output=$(eval "$GPG_ENV git -C \"$SCRIPT_DIR\" tag -v \"$tag\" 2>&1" || true)
+            if echo "$retry_output" | grep -q "Good signature"; then
+                echo "  Signature: VERIFIED (key imported automatically)"
+                echo "  $(echo "$retry_output" | grep "Good signature")"
+                return 0
             fi
 
             echo "  Key imported but signature still could not be verified."
         else
-            echo "  The signing key is not in your keyring and PUBKEY.asc is missing."
+            echo "  Signing key not in your keyring and PUBKEY.asc is missing."
             echo "  Import manually:"
             echo "    gpg --keyserver keys.openpgp.org --recv-keys A8697988B2D8E6C579651CE03DCF9E5E79224F67"
         fi
     else
+        # Actual bad signature — potentially compromised
+        echo "  Signature: FAILED"
+        echo ""
+        echo "$verify_output" | head -5
+        echo ""
         echo "  The tag signature could not be verified."
         echo "  This may indicate a compromised release."
         echo "  DO NOT proceed unless you trust the source."
