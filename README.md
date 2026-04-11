@@ -28,6 +28,39 @@ Multiple tickets? They run in parallel with isolated git worktrees:
 /parallel-implement XPTO-101 XPTO-102 XPTO-103
 ```
 
+## Input modes
+
+### With Atlassian MCP (full RAG pipeline)
+
+With MCP servers connected, Shipwright pulls acceptance criteria, linked tickets, and sprint context directly from JIRA — a full retrieval-augmented pipeline from your project management tool to implementation.
+
+```
+implement XPTO-5311
+```
+
+That's it. The engine fetches everything it needs from JIRA, transitions the ticket, and tracks progress in Slack.
+
+### Without JIRA (prompt-based)
+
+No MCP servers? No problem. Provide a structured prompt and the same pipeline runs with context from your description:
+
+```
+implement Add rate limiting to the /api/documents endpoint.
+Limit: 100 req/min per API key.
+
+## Acceptance Criteria
+- Return 429 with Retry-After header
+- Rate tracked per API key, not per IP
+- Configurable via environment variable
+- Existing tests must not break
+
+## Technical Notes
+- Use Redis for distributed counting
+- Follow middleware pattern in src/api/
+```
+
+The engine derives the branch name and context from your prompt. Same TDD loop, same code review, same quality — just without the JIRA automation.
+
 ## What's included
 
 ```
