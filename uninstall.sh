@@ -1,4 +1,19 @@
 #!/bin/bash
+# =============================================================================
+# Shipwright — Uninstaller (Mac/Linux)
+#
+# Removes ONLY engine-owned symlinks from ~/.claude/. User files, settings,
+# plugins, projects, and memories are never touched.
+#
+# HOW IT IDENTIFIES ENGINE FILES:
+#   - A symlink whose target path contains this repo's engine/ directory
+#     is engine-owned → removed
+#   - A regular file (not a symlink) is user-owned → preserved
+#   - A symlink pointing elsewhere (different tool) → preserved
+#
+# NETWORK REQUESTS: None. This script is fully offline.
+# DESTRUCTIVE: Only removes symlinks. No file content is ever deleted.
+# =============================================================================
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -20,7 +35,7 @@ fi
 removed=0
 kept=0
 
-# --- Remove CLAUDE.md symlink (only if it points to our engine) ---
+# --- Remove CLAUDE.md symlink (only if it points to OUR engine) ---
 claude_md="$CLAUDE_DIR/CLAUDE.md"
 if [ -L "$claude_md" ]; then
     link_target=$(readlink "$claude_md")
@@ -37,7 +52,7 @@ elif [ -e "$claude_md" ]; then
     ((kept++))
 fi
 
-# --- Remove directory symlinks (engine-owned) ---
+# --- Remove directory symlinks (engine-owned: agents, commands, prompts, skills) ---
 dir_items=("agents" "commands" "prompts" "skills")
 
 for item in "${dir_items[@]}"; do
@@ -59,13 +74,14 @@ for item in "${dir_items[@]}"; do
 done
 
 # --- Remove per-file symlinks in rules/ and stacks/ (preserve user files) ---
+# Only removes symlinks pointing to our engine. Real files are user-owned.
 merge_items=("rules" "stacks")
 
 for item in "${merge_items[@]}"; do
     dest_dir="$CLAUDE_DIR/$item"
 
+    # Handle old-style directory symlink (from pre-1.2.0 installs)
     if [ -L "$dest_dir" ]; then
-        # Whole directory is a symlink (old install style)
         link_target=$(readlink "$dest_dir")
         if [[ "$link_target" == *"$ENGINE_DIR"* ]]; then
             rm "$dest_dir"
@@ -79,6 +95,7 @@ for item in "${merge_items[@]}"; do
         continue
     fi
 
+    # Walk each .md file: remove engine symlinks, keep user files
     engine_removed=0
     user_kept=0
 
@@ -94,11 +111,12 @@ for item in "${merge_items[@]}"; do
                 ((user_kept++))
             fi
         else
+            # Real file — user-owned, never touch
             ((user_kept++))
         fi
     done
 
-    # Remove directory if empty
+    # Remove directory only if completely empty after cleanup
     if [ "$user_kept" -eq 0 ] && [ -d "$dest_dir" ]; then
         rmdir "$dest_dir" 2>/dev/null && echo "  Removed: $item/ (empty after cleanup)" || true
         ((removed++))
