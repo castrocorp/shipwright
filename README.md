@@ -144,7 +144,7 @@ Run `/init-project` to auto-detect stack, build tool, base branch, and MCP serve
 ## Updating
 
 ```bash
-# Check for updates
+# Check for updates (includes signature verification)
 ./update.sh --check
 
 # Update to latest version
@@ -155,6 +155,27 @@ Run `/init-project` to auto-detect stack, build tool, base branch, and MCP serve
 ```
 
 For automatic background checks, add the hook from `template/hooks.md` to your `settings.json`. Shipwright will show a one-line notice at `/start-task` when an update is available.
+
+### Security
+
+Every release tag is GPG-signed. The updater verifies the signature before applying any changes:
+
+- **Signed tag + valid signature**: update proceeds automatically
+- **Unsigned tag**: updater warns and asks for confirmation
+- **Invalid/untrusted signature**: updater blocks and warns of potential compromise
+
+You can bypass verification with `--skip-verify` (not recommended for public forks).
+
+**For maintainers** — to sign a release:
+
+```bash
+# Ensure git is configured with your GPG key
+git config user.signingkey <YOUR_GPG_KEY_ID>
+
+# Create a signed tag
+git tag -s v1.3.0 -m "v1.3.0"
+git push origin v1.3.0
+```
 
 ## Uninstalling
 

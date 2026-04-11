@@ -12,12 +12,14 @@ echo ""
 # Parse args
 CHECK_ONLY=false
 TARGET_VERSION=""
+SKIP_VERIFY=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --check) CHECK_ONLY=true; shift ;;
         --version) TARGET_VERSION="$2"; shift 2 ;;
-        *) echo "Usage: update.sh [--check] [--version vX.Y.Z]"; exit 1 ;;
+        --skip-verify) SKIP_VERIFY=true; shift ;;
+        *) echo "Usage: update.sh [--check] [--version vX.Y.Z] [--skip-verify]"; exit 1 ;;
     esac
 done
 
@@ -57,12 +59,77 @@ TARGET=${TARGET_TAG#v}
 echo "Target version:  $TARGET ($TARGET_TAG)"
 echo ""
 
+# --- GPG signature verification ---
+verify_tag() {
+    local tag="$1"
+
+    if [ "$SKIP_VERIFY" = true ]; then
+        echo "  Signature verification skipped (--skip-verify)"
+        return 0
+    fi
+
+    # Check if gpg is available
+    if ! command -v gpg &>/dev/null; then
+        echo "  WARNING: gpg not installed — cannot verify tag signature."
+        echo "  Install GPG or use --skip-verify to bypass (at your own risk)."
+        echo ""
+        read -p "  Continue without verification? [y/N] " -n 1 -r
+        echo ""
+        [[ $REPLY =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
+        return 0
+    fi
+
+    # Check if tag is signed
+    if git -C "$SCRIPT_DIR" tag -v "$tag" &>/dev/null; then
+        local signer
+        signer=$(git -C "$SCRIPT_DIR" tag -v "$tag" 2>&1 | grep "^gpg:.*Good signature" || true)
+        if [ -n "$signer" ]; then
+            echo "  Signature: VERIFIED"
+            echo "  $signer"
+            return 0
+        fi
+    fi
+
+    # Tag exists but verification failed
+    local verify_output
+    verify_output=$(git -C "$SCRIPT_DIR" tag -v "$tag" 2>&1 || true)
+
+    # Check if tag is simply not signed (not a failure, just unsigned)
+    if echo "$verify_output" | grep -q "no signature"; then
+        echo "  Signature: NOT SIGNED (tag has no GPG signature)"
+        echo ""
+        echo "  This tag was not signed by the maintainer."
+        echo "  This is safe for personal/private repos but risky for public ones."
+        echo ""
+        read -p "  Continue with unsigned tag? [y/N] " -n 1 -r
+        echo ""
+        [[ $REPLY =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
+        return 0
+    fi
+
+    # Signature exists but is invalid or untrusted
+    echo "  Signature: FAILED"
+    echo ""
+    echo "$verify_output" | head -5
+    echo ""
+    echo "  The tag signature could not be verified."
+    echo "  This may indicate a compromised release."
+    echo "  DO NOT proceed unless you trust the source."
+    echo ""
+    read -p "  Continue anyway? (NOT RECOMMENDED) [y/N] " -n 1 -r
+    echo ""
+    [[ $REPLY =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
+    return 0
+}
+
 # Check only mode
 if [ "$CHECK_ONLY" = true ]; then
     if [ "$CURRENT" = "$TARGET" ]; then
         echo "Already up to date."
     else
         echo "Update available: $CURRENT → $TARGET"
+        echo ""
+        verify_tag "$TARGET_TAG"
         echo ""
         echo "Changelog:"
         git -C "$SCRIPT_DIR" log --oneline "v$CURRENT..$TARGET_TAG" 2>/dev/null || \
@@ -76,6 +143,11 @@ if [ "$CURRENT" = "$TARGET" ]; then
     echo "Already up to date."
     exit 0
 fi
+
+# Verify signature before any changes
+echo "Verifying release signature..."
+verify_tag "$TARGET_TAG"
+echo ""
 
 # Check for local modifications in engine/
 DIRTY=$(git -C "$SCRIPT_DIR" diff --name-only HEAD -- engine/ 2>/dev/null)
