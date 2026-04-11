@@ -76,52 +76,14 @@ External integrations (Slack, Atlassian, `gh` CLI, ralph-loop) are **enhancement
 
 ---
 
-## Critical Universal Rules
+## Universal Rules
 
-### 1. Slack Thread Management
+The engine installs universal rules to `~/.claude/rules/` (symlinked from `engine/rules/` by `install.sh`). These are loaded automatically by Claude Code and cover: no AI references, testing standards, branch management, PR requirements, code quality, and prohibited actions.
+
+### Slack Thread Management
 - **ONE TASK = ONE THREAD = ONE TIMESTAMP**
 - Thread state persisted in `.slack-thread` file — all commands read from it
 - Read Slack channel and tool name from `.claude/project.md`
-
-### 2. No AI References
-- NO AI references anywhere whatsoever
-- NO Claude attributions in commits or PRs
-- NO "Generated with Claude Code" footers
-- NO "Co-Authored-By: Claude" lines
-
-### 3. Testing Standards
-- TDD tests MUST be unit tests (faster feedback)
-- Never integration tests for TDD Red phase
-- Mock external dependencies
-- Integration tests only for end-to-end verification AFTER unit tests
-
-### 4. Branch Management
-- ALWAYS branch from the base branch declared in `project.md` (never main/master unless configured)
-- Branch naming convention from `project.md`
-- Check JIRA ticket type to determine prefix
-
-### 5. PR Requirements
-- MUST follow the PR template declared in `project.md`
-- All sections required
-- Document testing with actual commands
-- Link JIRA tickets with full URL
-
-### 6. Code Quality
-- Read `~/.claude/stacks/<stack>.md` for language-specific rules
-- Run lint check on YOUR files only (command from `project.md`)
-- NEVER run lint format if `project.md` marks it FORBIDDEN
-- NEVER fix pre-existing violations in unrelated files
-
----
-
-## Prohibited Actions
-
-- Create multiple threads for one task
-- Put AI references in commits/PRs/code
-- Work on the base branch directly
-- Skip any PR template sections
-- Skip `/check-lessons` before implementation
-- Hardcode project-specific values — always read from `project.md`
 
 ---
 

@@ -18,7 +18,7 @@ echo "======================"
 echo ""
 
 # ---------- 1. Commands: frontmatter ----------
-echo "[1/9] Checking command frontmatter..."
+echo "[1/10] Checking command frontmatter..."
 
 for f in "$ENGINE_DIR"/commands/*.md; do
     name=$(basename "$f")
@@ -35,7 +35,7 @@ done
 echo ""
 
 # ---------- 2. Agents: frontmatter ----------
-echo "[2/9] Checking agent frontmatter..."
+echo "[2/10] Checking agent frontmatter..."
 
 for f in "$ENGINE_DIR"/agents/*.md; do
     name=$(basename "$f")
@@ -55,7 +55,7 @@ done
 echo ""
 
 # ---------- 3. Skills: frontmatter ----------
-echo "[3/9] Checking skill frontmatter..."
+echo "[3/10] Checking skill frontmatter..."
 
 for f in "$ENGINE_DIR"/skills/*/SKILL.md; do
     name=$(echo "$f" | sed "s|$ENGINE_DIR/skills/||" | sed 's|/SKILL.md||')
@@ -72,7 +72,7 @@ done
 echo ""
 
 # ---------- 4. Template placeholders vs command references ----------
-echo "[4/9] Checking placeholder coverage..."
+echo "[4/10] Checking placeholder coverage..."
 
 # Extract placeholders that commands expect from project.md
 # These are the config keys commands read via "Read .claude/project.md for: X, Y, Z"
@@ -88,7 +88,7 @@ done
 echo ""
 
 # ---------- 5. Prompts: existence check ----------
-echo "[5/9] Checking prompt templates..."
+echo "[5/10] Checking prompt templates..."
 
 if [ -d "$ENGINE_DIR/prompts" ]; then
     for f in "$ENGINE_DIR"/prompts/*.md; do
@@ -106,7 +106,7 @@ fi
 echo ""
 
 # ---------- 6. Stacks: frontmatter ----------
-echo "[6/9] Checking stack adapter frontmatter..."
+echo "[6/10] Checking stack adapter frontmatter..."
 
 if [ -d "$ENGINE_DIR/stacks" ]; then
     for f in "$ENGINE_DIR"/stacks/*.md; do
@@ -127,8 +127,27 @@ else
 fi
 echo ""
 
-# ---------- 7. install.sh references all engine dirs ----------
-echo "[7/9] Checking install.sh coverage..."
+# ---------- 7. Rules: existence ----------
+echo "[7/10] Checking rules..."
+
+if [ -d "$ENGINE_DIR/rules" ]; then
+    count=0
+    for f in "$ENGINE_DIR"/rules/*.md; do
+        [ -f "$f" ] || continue
+        name=$(basename "$f")
+        ok "$name"
+        ((count++))
+    done
+    if [ $count -eq 0 ]; then
+        warn "rules/ directory exists but has no .md files"
+    fi
+else
+    error "rules/ directory missing"
+fi
+echo ""
+
+# ---------- 8. install.sh references all engine dirs ----------
+echo "[8/10] Checking install.sh coverage..."
 
 for dir in "$ENGINE_DIR"/*/; do
     dirname=$(basename "$dir")
@@ -149,12 +168,12 @@ else
 fi
 echo ""
 
-# ---------- 8. Engine CLAUDE.md: required sections ----------
-echo "[8/9] Checking engine CLAUDE.md..."
+# ---------- 9. Engine CLAUDE.md: required sections ----------
+echo "[9/10] Checking engine CLAUDE.md..."
 
 ENGINE_CLAUDE="$ENGINE_DIR/CLAUDE.md"
 if [ -f "$ENGINE_CLAUDE" ]; then
-    REQUIRED_SECTIONS=("Automatic Workflow Execution" "Graceful Degradation" "Error Recovery" "Critical Universal Rules" "Prohibited Actions")
+    REQUIRED_SECTIONS=("Automatic Workflow Execution" "Graceful Degradation" "Error Recovery" "Universal Rules")
     for section in "${REQUIRED_SECTIONS[@]}"; do
         if grep -qi "$section" "$ENGINE_CLAUDE"; then
             ok "CLAUDE.md has '$section'"
@@ -167,8 +186,8 @@ else
 fi
 echo ""
 
-# ---------- 9. Stack references in template ----------
-echo "[9/9] Checking stack references in template..."
+# ---------- 10. Stack references in template ----------
+echo "[10/10] Checking stack references in template..."
 
 if [ -f "$TEMPLATE" ] && [ -d "$ENGINE_DIR/stacks" ]; then
     # Extract stack names referenced as defaults in the template

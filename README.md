@@ -32,10 +32,11 @@ Multiple tickets? They run in parallel with isolated git worktrees:
 
 ```
 engine/
-  CLAUDE.md          — Workflow rules and pipeline definition
+  CLAUDE.md          — Workflow pipeline and orchestration
   agents/            — Isolated agents (code-reviewer, tech-lead)
   commands/          — Pipeline steps (start-task, tdd-ralph, code-review, etc.)
   prompts/           — Reusable prompt templates (worker-agent)
+  rules/             — Universal rules auto-loaded by Claude Code
   skills/            — Reusable skills (check-lessons, slack-rules, parallel-implement)
   stacks/            — Language/framework adapters (kotlin-spring, etc.)
 template/
@@ -94,7 +95,8 @@ Three layers, from general to specific:
 
 | Layer | File | Scope |
 |-------|------|-------|
-| Engine rules | `~/.claude/CLAUDE.md` (symlinked) | All projects |
+| Engine workflow | `~/.claude/CLAUDE.md` (symlinked) | All projects |
+| Universal rules | `~/.claude/rules/*.md` (symlinked) | All projects, auto-loaded |
 | Personal overrides | `~/.claude/CLAUDE.local.md` | All projects |
 | Project config | `.claude/project.md` | One project |
 

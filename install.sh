@@ -25,7 +25,7 @@ backup_if_exists() {
     fi
 }
 
-items=("CLAUDE.md" "agents" "commands" "prompts" "skills" "stacks")
+items=("CLAUDE.md" "agents" "commands" "prompts" "rules" "skills" "stacks")
 
 for item in "${items[@]}"; do
     src="$ENGINE_DIR/$item"

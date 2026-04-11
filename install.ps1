@@ -36,7 +36,7 @@ function Backup-IfExists($path) {
     }
 }
 
-$items = @("CLAUDE.md", "agents", "commands", "prompts", "skills", "stacks")
+$items = @("CLAUDE.md", "agents", "commands", "prompts", "rules", "skills", "stacks")
 
 foreach ($item in $items) {
     $src = Join-Path $EngineDir $item

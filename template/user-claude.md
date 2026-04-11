@@ -36,9 +36,9 @@
 - Workflow pipeline definition → `engine/CLAUDE.md`
 - Command sequences → `engine/CLAUDE.md`
 - Error recovery rules → `engine/CLAUDE.md`
-- Testing standards → `engine/CLAUDE.md`
-- Branch management → `engine/CLAUDE.md`
-- PR requirements → `engine/CLAUDE.md`
-- Prohibited actions → `engine/CLAUDE.md`
-- Code quality rules → `engine/stacks/<stack>.md`
+- Testing standards → `engine/rules/testing-standards.md` (auto-loaded from `~/.claude/rules/`)
+- Branch management → `engine/rules/branch-management.md` (auto-loaded from `~/.claude/rules/`)
+- PR requirements → `engine/rules/pr-requirements.md` (auto-loaded from `~/.claude/rules/`)
+- Prohibited actions → `engine/rules/prohibited-actions.md` (auto-loaded from `~/.claude/rules/`)
+- Code quality rules → `engine/rules/code-quality.md` + `engine/stacks/<stack>.md`
 - Project-specific config → `.claude/project.md` (per repo)
