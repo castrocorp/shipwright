@@ -56,7 +56,7 @@ Use the Skill tool to invoke `ralph-loop:ralph-loop`. Fill ALL placeholders from
 **Skill invocation:**
 ```
 skill: "ralph-loop:ralph-loop"
-args: "<COMPOSED_PROMPT> --completion-promise DONE --max-iterations 30"
+args: "<COMPOSED_PROMPT> --completion-promise READY_FOR_REVIEW --max-iterations 30"
 ```
 
 ## Step 3b: Manual TDD (fallback when ralph-loop unavailable)
@@ -122,7 +122,7 @@ Post phase transitions to existing Slack thread:
 - If missing, continue without Slack
 
 --- COMPLETION ---
-Output <promise>DONE</promise> ONLY when ALL checkboxes are true.
+Output <promise>READY_FOR_REVIEW</promise> ONLY when ALL checkboxes are true.
 ```
 
 ## Step 4: After Ralph Loop Exits

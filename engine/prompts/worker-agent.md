@@ -48,7 +48,7 @@ WORKFLOW — Execute without stopping:
    - Re-read every file you modified
    - Check for: security issues, missing edge cases, code style
    - Fix issues found
-   - Only output <promise>DONE</promise> when satisfied
+   - Only output <promise>READY_FOR_REVIEW</promise> when satisfied
 
 STACK RULES:
 Read ~/.claude/stacks/{STACK}.md for language-specific code quality rules.

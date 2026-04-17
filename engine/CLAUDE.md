@@ -35,7 +35,7 @@ After user requests `/create-pr` → create PR → **[Jira → Code Review]**
 After `/check-lessons`, invoke `/tdd-ralph` to start iterative TDD implementation. This command:
 1. Gathers context from prior steps (JIRA analysis, lessons learned, bug analysis)
 2. Builds a comprehensive ralph-loop prompt with TDD + quality checklists
-3. Invokes `ralph-loop` automatically with `--completion-promise "DONE" --max-iterations 30`
+3. Invokes `ralph-loop` automatically with `--completion-promise "READY_FOR_REVIEW" --max-iterations 30`
 4. Ralph-loop iterates Red-Green-Refactor cycles until all criteria are met
 
 **Do NOT manually build ralph-loop prompts** — `/tdd-ralph` handles this automatically.
