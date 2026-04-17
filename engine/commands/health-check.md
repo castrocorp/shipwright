@@ -112,7 +112,7 @@ Project Config:
 Integrations:
   Slack:        slack-bot                OK
   Atlassian:    cloud-id-xxx             OK
-  GitHub CLI:   PeCastro16               OK
+  GitHub CLI:   your-github-handle       OK
   ralph-loop:   installed                OK
 
 Knowledge:

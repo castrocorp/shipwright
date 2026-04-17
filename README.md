@@ -17,7 +17,7 @@ Give Claude a ticket ID and Shipwright runs the full pipeline automatically:
     ↓
 /tdd-ralph           Red → Green → Refactor (up to 30 iterations)
     ↓
-/code-review         Independent 6-dimension review
+/code-review         Adversarial 9-dimension review + audit pass
     ↓
 /create-pr           Push, PR, JIRA → Code Review
 ```
@@ -109,7 +109,7 @@ $EDITOR .claude/project.md
 
 - **Full pipeline automation** — one command triggers the entire flow from ticket to PR
 - **TDD-first** — unit tests before implementation, every time
-- **Independent code review** — isolated agent that never sees implementation decisions
+- **Adversarial code review** — isolated reviewer agent framed as a skeptical colleague; reports findings at three confidence tiers (`[SUSPICION]` / `[FINDING]` / `[BLOCKER]`) plus generated failure modes (`[ADVERSARIAL]`)
 - **Parallel execution** — 2-5 tickets simultaneously via git worktrees
 - **Slack tracking** — one thread per task, every step posts updates
 - **JIRA transitions** — automatic In Progress / Code Review state changes
