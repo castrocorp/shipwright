@@ -30,9 +30,9 @@ Multiple tickets? They run in parallel with isolated git worktrees:
 
 ## Input modes
 
-### With Atlassian MCP (full RAG pipeline)
+### With Atlassian MCP (structured retrieval pipeline)
 
-With MCP servers connected, Shipwright pulls acceptance criteria, linked tickets, and sprint context directly from JIRA — a full retrieval-augmented pipeline from your project management tool to implementation.
+With MCP servers connected, Shipwright pulls acceptance criteria, linked tickets, and sprint context directly from JIRA — a structured retrieval pipeline from your project management tool to implementation.
 
 ```
 implement XPTO-5311
